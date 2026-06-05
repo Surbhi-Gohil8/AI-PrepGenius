@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,9 +15,9 @@ import FollowUpCard from '@/components/interview/FollowUpCard';
 import ResumeContextSheet from '@/components/interview/ResumeContextSheet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Play, ArrowRight, CheckCircle, ChevronRight, FileText, Loader2, Sparkles } from 'lucide-react';
+import { getApiErrorMessage } from '@/lib/errors';
+import { CheckCircle, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 
 export default function LiveInterviewPage() {
   const { sessionId } = useParams();
@@ -70,9 +70,9 @@ export default function LiveInterviewPage() {
         } else {
           setCurrentIdx(response.data.generatedQuestions.length - 1);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to load session details:', err);
-        toast.error('Session not found or access denied.');
+        toast.error(getApiErrorMessage(err, 'Session not found or access denied.'));
         router.push('/dashboard');
       } finally {
         setLoading(false);
@@ -84,20 +84,12 @@ export default function LiveInterviewPage() {
     }
   }, [authLoading, isAuthenticated, sessionId, router]);
 
-  // Handle uploading and scoring audio blob when recording stops
-  useEffect(() => {
-    if (audioBlob) {
-      uploadAndScoreResponse(audioBlob);
-    }
-  }, [audioBlob]);
-
-  const uploadAndScoreResponse = async (blob: Blob) => {
+  const uploadAndScoreResponse = useCallback(async (blob: Blob) => {
     if (!session) return;
     setIsProcessing(true);
-    
+
     const currentQuestion = session.generatedQuestions[currentIdx];
     const formData = new FormData();
-    // Use correct extension based on blob type (usually webm)
     const fileExt = blob.type.split(';')[0].split('/')[1] || 'webm';
     formData.append('audio', blob, `response.${fileExt}`);
     formData.append('questionId', currentQuestion.id);
@@ -105,21 +97,18 @@ export default function LiveInterviewPage() {
 
     try {
       const response = await api.post('/transcribe', formData);
-
       const parsedAnswer: Answer = response.data.answer;
-      
+
       if (isAnsweringFollowUp) {
-        // Save follow up details
         setFollowUpTranscript(parsedAnswer.transcript);
         toast.success('Follow-up answer processed!');
         setIsAnsweringFollowUp(false);
       } else {
-        // Save primary answer details
         setTranscriptText(parsedAnswer.transcript);
         setCurrentAnswer(parsedAnswer);
-        setCompletedQuestions(prev => ({
+        setCompletedQuestions((prev) => ({
           ...prev,
-          [currentQuestion.id]: parsedAnswer
+          [currentQuestion.id]: parsedAnswer,
         }));
 
         if (parsedAnswer.followUpQuestion) {
@@ -127,14 +116,20 @@ export default function LiveInterviewPage() {
         }
         toast.success('Response processed!');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Error processing speech. Please try again.');
+      toast.error(getApiErrorMessage(err, 'Error processing speech. Please try again.'));
       clearAudio();
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [session, currentIdx, isAnsweringFollowUp, clearAudio]);
+
+  useEffect(() => {
+    if (audioBlob) {
+      void uploadAndScoreResponse(audioBlob);
+    }
+  }, [audioBlob, uploadAndScoreResponse]);
 
   const handleNextQuestion = () => {
     // Reset states
@@ -153,7 +148,7 @@ export default function LiveInterviewPage() {
   const handleCompleteInterview = async () => {
     setIsSubmittingFinish(true);
     try {
-      const response = await api.post(`/interview/complete/${sessionId}`);
+      await api.post(`/interview/complete/${sessionId}`);
       toast.success('Interview evaluation complete!');
       router.push(`/results/${sessionId}`);
     } catch (err) {
@@ -218,7 +213,7 @@ export default function LiveInterviewPage() {
 
         {/* View Resume Context Button */}
         {user?.resumeData && (
-          <ResumeContextSheet resumeData={user.resumeData as any} />
+          <ResumeContextSheet resumeData={user.resumeData} />
         )}
       </div>
 

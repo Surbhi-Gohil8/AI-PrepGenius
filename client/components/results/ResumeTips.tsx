@@ -1,15 +1,15 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Lightbulb, Check } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { motion, type Variants } from 'framer-motion';
+import { Lightbulb } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface ResumeTipsProps {
   tips: string[];
 }
 
 export default function ResumeTips({ tips }: ResumeTipsProps) {
-  const containerVariants: any = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -19,7 +19,7 @@ export default function ResumeTips({ tips }: ResumeTipsProps) {
     }
   };
 
-  const itemVariants: any = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, x: -25 },
     show: {
       opacity: 1,

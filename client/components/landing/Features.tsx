@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { FileSearch, Mic2, Brain, TrendingUp } from 'lucide-react';
 
@@ -32,7 +32,7 @@ export default function Features() {
     },
   ];
 
-  const containerVariants: any = {
+  const containerVariants: Variants = {
     hidden: {},
     show: {
       transition: {
@@ -41,7 +41,7 @@ export default function Features() {
     },
   };
 
-  const cardVariants: any = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 30 },
     show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
   };

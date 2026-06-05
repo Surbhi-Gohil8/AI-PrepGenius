@@ -4,16 +4,11 @@ import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useIsClient } from '@/hooks/useIsClient';
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // Prevent hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
 
   if (!mounted) {
     return <div className="w-9 h-9" />;

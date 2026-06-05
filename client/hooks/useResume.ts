@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { ResumeData } from '@/types';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/errors';
 
 export function useResume() {
   const { user, refreshUser } = useAuth();
@@ -13,6 +14,7 @@ export function useResume() {
   const [isUploading, setIsUploading] = useState(false);
 
   const fetchResume = useCallback(async () => {
+    await Promise.resolve();
     setLoading(true);
     try {
       const response = await api.get('/resume/me');
@@ -35,9 +37,8 @@ export function useResume() {
       await refreshUser(); // Update user object in Auth context
       toast.success('Resume uploaded and parsed successfully!');
       return response.data.resumeData;
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'Failed to upload and parse resume.';
-      toast.error(msg);
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Failed to upload and parse resume.'));
       throw error;
     } finally {
       setIsUploading(false);
@@ -51,7 +52,7 @@ export function useResume() {
       setResumeData(null);
       await refreshUser();
       toast.success('Resume data deleted.');
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to delete resume data.');
     } finally {
       setLoading(false);
@@ -59,12 +60,14 @@ export function useResume() {
   }, [refreshUser]);
 
   useEffect(() => {
-    if (user) {
-      fetchResume();
-    } else {
-      setResumeData(null);
-      setLoading(false);
+    if (!user) {
+      void Promise.resolve().then(() => {
+        setResumeData(null);
+        setLoading(false);
+      });
+      return;
     }
+    void fetchResume();
   }, [user, fetchResume]);
 
   return {

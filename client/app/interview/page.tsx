@@ -34,7 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 
 export default function InterviewSetupPage() {
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const { loading: authLoading, isAuthenticated } = useAuth();
   const { resumeData, loading: resumeLoading, deleteResumeData, refetchResume } = useResume();
   const router = useRouter();
 

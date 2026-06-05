@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useCountUp } from '@/hooks/useCountUp';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/errors';
 
 interface ResumeATSCheckerProps {
   targetRoleDefault?: string;
@@ -39,9 +40,8 @@ export default function ResumeATSChecker({ targetRoleDefault = '' }: ResumeATSCh
       });
       setAnalysis(response.data.analysis);
       toast.success('ATS analysis complete');
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'ATS analysis failed.';
-      toast.error(msg);
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'ATS analysis failed.'));
     } finally {
       setLoading(false);
     }

@@ -133,7 +133,7 @@ export default function FeedbackAccordion({ answers, sessionId, onSessionUpdate 
                   <div>
                     <h5 className="text-xs font-semibold uppercase tracking-wider text-indigo-400">Interviewer Follow-up Question</h5>
                     <p className="text-sm text-text-primary font-medium italic mt-1">
-                      "{ans.followUpQuestion}"
+                      &ldquo;{ans.followUpQuestion}&rdquo;
                     </p>
                   </div>
                 </div>

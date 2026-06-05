@@ -5,16 +5,23 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Zap, FileText, ArrowRight, Play } from 'lucide-react';
 
-export default function Hero() {
-  // Generate 15 floating particles with random positions & timings
-  const particles = Array.from({ length: 15 }, (_, i) => ({
+function seededRandom(seed: number): number {
+  return ((seed * 9301 + 49297) % 233280) / 233280;
+}
+
+function createParticles(count: number) {
+  return Array.from({ length: count }, (_, i) => ({
     id: i,
-    size: Math.random() * 6 + 4, // 4px to 10px
-    x: Math.random() * 100, // percentage x-axis
-    y: Math.random() * 100 + 100, // start below the screen
-    duration: Math.random() * 12 + 8, // 8s to 20s
-    delay: Math.random() * 5,
+    size: seededRandom(i * 4 + 1) * 6 + 4,
+    x: seededRandom(i * 4 + 2) * 100,
+    duration: seededRandom(i * 4 + 3) * 12 + 8,
+    delay: seededRandom(i * 4 + 4) * 5,
   }));
+}
+
+const particles = createParticles(15);
+
+export default function Hero() {
 
   return (
     <div className="relative overflow-hidden py-24 sm:py-32 flex flex-col items-center justify-center min-h-[85vh]">

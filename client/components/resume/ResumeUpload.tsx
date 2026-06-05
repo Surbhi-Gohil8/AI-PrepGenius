@@ -2,12 +2,13 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Loader2, CheckCircle2, UploadCloud } from 'lucide-react';
+import { FileText, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useResume } from '@/hooks/useResume';
+import { ResumeData } from '@/types';
 
 interface ResumeUploadProps {
-  onSuccess: (data: any) => void;
+  onSuccess: (data: ResumeData) => void;
 }
 
 export default function ResumeUpload({ onSuccess }: ResumeUploadProps) {

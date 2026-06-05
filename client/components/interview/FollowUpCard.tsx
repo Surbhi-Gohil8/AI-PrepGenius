@@ -36,7 +36,7 @@ export default function FollowUpCard({
         
         <CardContent>
           <p className="text-lg font-medium text-text-primary italic leading-relaxed">
-            "{followUpQuestion}"
+            &ldquo;{followUpQuestion}&rdquo;
           </p>
           <p className="text-xs text-text-secondary mt-3">
             Interviewer is drilling deeper into your previous response. Answering follow-ups counts as bonus marks!

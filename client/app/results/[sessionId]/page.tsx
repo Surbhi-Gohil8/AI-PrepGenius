@@ -17,18 +17,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useCountUp } from '@/hooks/useCountUp';
 import {
   Award,
-  BookOpen,
   Brain,
   Code2,
   Download,
   LayoutDashboard,
   MessageSquare,
   RefreshCw,
-  Sparkles,
   Trophy,
   Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/errors';
 
 export default function ResultsPage() {
   const { sessionId } = useParams();
@@ -55,9 +54,9 @@ export default function ResultsPage() {
         } else {
           setSession(response.data);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to fetch session results:', err);
-        toast.error('Results session not found.');
+        toast.error(getApiErrorMessage(err, 'Results session not found.'));
         router.push('/dashboard');
       } finally {
         setLoading(false);

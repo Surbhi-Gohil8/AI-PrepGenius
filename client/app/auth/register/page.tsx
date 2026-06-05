@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Brain, Loader2 } from 'lucide-react';
+import { getApiErrorMessage } from '@/lib/errors';
 
 export default function RegisterPage() {
   const { register, loading } = useAuth();
@@ -34,8 +35,8 @@ export default function RegisterPage() {
 
     try {
       await register(name, email, password);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Email might be in use.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Registration failed. Email might be in use.'));
     }
   };
 

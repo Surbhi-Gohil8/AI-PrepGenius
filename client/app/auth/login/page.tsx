@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Brain, Loader2 } from 'lucide-react';
+import { getApiErrorMessage } from '@/lib/errors';
 
 export default function LoginPage() {
   const { login, loading } = useAuth();
@@ -28,8 +29,8 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Login failed. Please check your credentials.'));
     }
   };
 
@@ -115,7 +116,7 @@ export default function LoginPage() {
             </motion.div>
             
             <p className="text-xs text-center text-text-secondary">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/auth/register" className="font-semibold text-indigo-500 hover:text-indigo-400">
                 Sign up
               </Link>

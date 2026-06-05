@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import ThemeToggle from './ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Brain, LayoutDashboard, History, PlusCircle, LogOut, User as UserIcon } from 'lucide-react';
+import { Brain, LayoutDashboard, PlusCircle, LogOut } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,

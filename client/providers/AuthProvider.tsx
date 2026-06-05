@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { setToken, clearToken, getToken } from '@/lib/auth';
 import { User } from '@/types';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/errors';
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const loadUser = async () => {
+    await Promise.resolve();
     const token = getToken();
     if (!token) {
       setUser(null);
@@ -54,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    loadUser();
+    void loadUser();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -66,9 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
       toast.success('Logged in successfully!');
       router.push('/dashboard');
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'Login failed. Please check your credentials.';
-      toast.error(msg);
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Login failed. Please check your credentials.'));
       throw error;
     } finally {
       setLoading(false);
@@ -84,9 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
       toast.success('Registration successful! Welcome.');
       router.push('/dashboard');
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'Registration failed.';
-      toast.error(msg);
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Registration failed.'));
       throw error;
     } finally {
       setLoading(false);

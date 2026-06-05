@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useIsClient } from '@/hooks/useIsClient';
 import {
   Radar,
   RadarChart as RechartsRadarChart,
@@ -17,11 +18,7 @@ interface RadarChartProps {
 }
 
 export default function RadarChart({ scores }: RadarChartProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
 
   if (!mounted) {
     return (

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useIsClient } from '@/hooks/useIsClient';
 import {
   LineChart,
   Line,
@@ -18,11 +19,7 @@ interface ScoreLineChartProps {
 }
 
 export default function ScoreLineChart({ sessions }: ScoreLineChartProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
 
   if (!mounted) {
     return (
