@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteResume = exports.getResume = exports.uploadResume = void 0;
+exports.deleteResume = exports.analyzeResumeATSHandler = exports.getResume = exports.uploadResume = void 0;
 const fs_1 = __importDefault(require("fs"));
 const User_1 = require("../models/User");
 const resumeParserService_1 = require("../services/resumeParserService");
@@ -79,6 +79,27 @@ const getResume = async (req, res) => {
     }
 };
 exports.getResume = getResume;
+const analyzeResumeATSHandler = async (req, res) => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized.' });
+            return;
+        }
+        const user = await User_1.User.findById(req.user.id);
+        if (!user?.resumeData?.rawText) {
+            res.status(400).json({ message: 'Upload a resume before running ATS analysis.' });
+            return;
+        }
+        const targetRole = typeof req.body?.targetRole === 'string' ? req.body.targetRole : undefined;
+        const analysis = await (0, groqService_1.analyzeResumeATS)(user.resumeData, targetRole);
+        res.status(200).json({ analysis });
+    }
+    catch (error) {
+        console.error('ATS Analysis Error:', error);
+        res.status(500).json({ message: error.message || 'Server error during ATS analysis.' });
+    }
+};
+exports.analyzeResumeATSHandler = analyzeResumeATSHandler;
 const deleteResume = async (req, res) => {
     try {
         if (!req.user) {

@@ -21,6 +21,7 @@ router.post('/upload', authMiddleware_1.authMiddleware, (req, res, next) => {
         next();
     });
 }, resumeController_1.uploadResume);
+router.post('/ats-analyze', authMiddleware_1.authMiddleware, resumeController_1.analyzeResumeATSHandler);
 router.get('/me', authMiddleware_1.authMiddleware, resumeController_1.getResume);
 router.delete('/me', authMiddleware_1.authMiddleware, resumeController_1.deleteResume);
 exports.default = router;

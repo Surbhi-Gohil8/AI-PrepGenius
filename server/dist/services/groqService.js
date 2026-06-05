@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateResumeTips = exports.calculateResumeMatch = exports.generateFollowUp = exports.scoreAnswer = exports.generateResumeQuestions = exports.parseResume = exports.transcribeAudio = void 0;
+exports.analyzeResumeATS = exports.generateResumeTips = exports.calculateResumeMatch = exports.generateFollowUp = exports.generateSuggestedAnswers = exports.scoreAnswer = exports.generateResumeQuestions = exports.parseResume = exports.transcribeAudio = void 0;
 const groq_sdk_1 = require("groq-sdk");
 const fs_1 = __importDefault(require("fs"));
 const apiKey = process.env.GROQ_API_KEY;
@@ -103,7 +103,7 @@ Rules:
 1. At least 2 questions must directly reference their projects.
 2. At least 1 question must be about a specific skill they listed on their resume.
 3. Questions must match the difficulty level: ${difficulty}.
-4. If HR domain: ask about their specific experience, roles, or teamwork style.
+4. Match question style to the domain (technical, clinical, design, business, etc.).
 5. Make questions feel like a real interviewer read their resume and is asking targeted questions.
 
 Return a JSON object containing a "questions" key which is an array of exactly 5 questions matching this format:
@@ -194,6 +194,64 @@ Return ONLY a valid JSON object matching this schema:
     }
 };
 exports.scoreAnswer = scoreAnswer;
+const generateSuggestedAnswers = async (answers, domain, difficulty, resumeData) => {
+    if (answers.length === 0)
+        return {};
+    const qaBlock = answers
+        .map((a, i) => `[${a.questionId}] Q${i + 1}: ${a.question}\nContext: ${a.context || 'N/A'}\nCandidate answered: ${a.transcript || '(no response)'}`)
+        .join('\n\n');
+    const prompt = `You are an expert interview coach. The candidate finished a ${difficulty} mock interview for "${domain}".
+
+Resume background: ${resumeData.experienceLevel}, ${resumeData.yearsOfExperience} years. Skills: ${resumeData.skills.slice(0, 12).join(', ')}.
+
+For EACH question below, write:
+1. suggestedAnswer: A strong model answer (150-250 words) they can study—clear structure (e.g. situation → approach → outcome), professional tone, specific to the question and their background where relevant.
+2. keyPoints: Exactly 4 short bullets on how to deliver this answer well.
+
+${qaBlock}
+
+Return ONLY valid JSON:
+{
+  "items": [
+    {
+      "questionId": "1",
+      "suggestedAnswer": "full model answer text",
+      "keyPoints": ["point 1", "point 2", "point 3", "point 4"]
+    }
+  ]
+}
+
+Include one item per questionId listed above.`;
+    try {
+        const response = await groq.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+                { role: 'system', content: 'You write exemplary interview answers for learning. Return ONLY JSON.' },
+                { role: 'user', content: prompt }
+            ],
+            response_format: { type: 'json_object' }
+        });
+        const content = response.choices[0]?.message?.content || '{"items":[]}';
+        const parsed = JSON.parse(content);
+        const map = {};
+        if (Array.isArray(parsed.items)) {
+            for (const item of parsed.items) {
+                if (item.questionId) {
+                    map[item.questionId] = {
+                        suggestedAnswer: item.suggestedAnswer || '',
+                        keyPoints: Array.isArray(item.keyPoints) ? item.keyPoints.slice(0, 4) : []
+                    };
+                }
+            }
+        }
+        return map;
+    }
+    catch (error) {
+        console.error('Error generating suggested answers:', error);
+        throw new Error(`Suggested answer generation failed: ${error.message}`);
+    }
+};
+exports.generateSuggestedAnswers = generateSuggestedAnswers;
 const generateFollowUp = async (question, transcript, resumeData) => {
     try {
         const skillsList = resumeData.skills.join(', ');
@@ -326,3 +384,76 @@ Return a JSON object containing a "tips" key which is an array of exactly 3 stri
     }
 };
 exports.generateResumeTips = generateResumeTips;
+const analyzeResumeATS = async (resumeData, targetRole) => {
+    const roleHint = targetRole?.trim()
+        ? `Target role: ${targetRole.trim()}`
+        : 'Infer a suitable target role from the resume (e.g. field of study or most recent role).';
+    const prompt = `You are an ATS (Applicant Tracking System) resume expert. Analyze this resume for ATS compatibility, clarity, and keyword optimization.
+
+${roleHint}
+
+Structured profile:
+- Skills: ${resumeData.skills.join(', ') || 'None listed'}
+- Experience: ${resumeData.experienceLevel}, ${resumeData.yearsOfExperience} years
+- Projects: ${resumeData.projects.join('; ') || 'None listed'}
+- Roles: ${resumeData.previousRoles.join('; ') || 'None listed'}
+- Education: ${resumeData.education || 'Not specified'}
+- Domains: ${resumeData.detectedDomains.join(', ') || 'None'}
+
+Resume text (excerpt):
+${resumeData.rawText.slice(0, 8000)}
+
+Evaluate: formatting/parseability, section structure, action verbs, quantified achievements, keyword coverage for the target role, contact info presence, length, and common ATS blockers (tables, images-only content, vague bullets).
+
+Return ONLY valid JSON:
+{
+  "score": 75,
+  "summary": "2-3 sentence overall ATS assessment",
+  "strengths": ["strength 1", "strength 2", "strength 3"],
+  "issues": [
+    { "category": "Keywords", "severity": "high", "message": "specific issue" }
+  ],
+  "improvements": ["actionable fix 1", "actionable fix 2", "actionable fix 3", "actionable fix 4", "actionable fix 5"],
+  "keywordsFound": ["keyword1", "keyword2"],
+  "keywordsMissing": ["missing1", "missing2"]
+}
+
+Rules:
+- score is 0-100 integer
+- exactly 3 strengths
+- 3-6 issues with severity high|medium|low
+- exactly 5 improvements (specific, rewrite-style suggestions)
+- 5-10 keywordsFound and 5-10 keywordsMissing relevant to the target role`;
+    try {
+        const response = await groq.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+                { role: 'system', content: 'You are an ATS resume analyst. Return ONLY JSON.' },
+                { role: 'user', content: prompt }
+            ],
+            response_format: { type: 'json_object' }
+        });
+        const content = response.choices[0]?.message?.content || '{}';
+        const parsed = JSON.parse(content);
+        return {
+            score: Math.min(100, Math.max(0, Math.round(Number(parsed.score) || 0))),
+            summary: parsed.summary || 'ATS analysis completed.',
+            strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 3) : [],
+            issues: Array.isArray(parsed.issues)
+                ? parsed.issues.slice(0, 6).map((i) => ({
+                    category: i.category || 'General',
+                    severity: ['high', 'medium', 'low'].includes(i.severity) ? i.severity : 'medium',
+                    message: i.message || ''
+                }))
+                : [],
+            improvements: Array.isArray(parsed.improvements) ? parsed.improvements.slice(0, 5) : [],
+            keywordsFound: Array.isArray(parsed.keywordsFound) ? parsed.keywordsFound.slice(0, 10) : [],
+            keywordsMissing: Array.isArray(parsed.keywordsMissing) ? parsed.keywordsMissing.slice(0, 10) : []
+        };
+    }
+    catch (error) {
+        console.error('Error analyzing resume ATS:', error);
+        throw new Error(`ATS analysis failed: ${error.message}`);
+    }
+};
+exports.analyzeResumeATS = analyzeResumeATS;

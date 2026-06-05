@@ -8,5 +8,6 @@ router.post('/start', authMiddleware_1.authMiddleware, interviewController_1.sta
 router.post('/generate-questions', authMiddleware_1.authMiddleware, interviewController_1.generateQuestions);
 router.get('/session/:id', authMiddleware_1.authMiddleware, interviewController_1.getSession);
 router.post('/complete/:id', authMiddleware_1.authMiddleware, interviewController_1.completeSession);
+router.post('/session/:id/suggested-answers', authMiddleware_1.authMiddleware, interviewController_1.generateSuggestedAnswers);
 router.get('/history', authMiddleware_1.authMiddleware, interviewController_1.getHistory);
 exports.default = router;

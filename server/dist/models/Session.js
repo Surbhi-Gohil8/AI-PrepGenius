@@ -28,7 +28,9 @@ const answerSchema = new mongoose_1.Schema({
         problemSolvingApproach: { type: String, default: '' },
         confidenceAndStructure: { type: String, default: '' },
         summary: { type: String, default: '' }
-    }
+    },
+    suggestedAnswer: { type: String, default: '' },
+    keyPoints: { type: [String], default: [] }
 }, { _id: false });
 const sessionSchema = new mongoose_1.Schema({
     userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },

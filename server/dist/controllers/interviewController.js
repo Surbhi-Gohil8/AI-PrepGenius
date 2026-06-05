@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getHistory = exports.completeSession = exports.getSession = exports.generateQuestions = exports.startSession = void 0;
+exports.getHistory = exports.generateSuggestedAnswers = exports.completeSession = exports.getSession = exports.generateQuestions = exports.startSession = void 0;
 const Session_1 = require("../models/Session");
 const User_1 = require("../models/User");
 const groqService = __importStar(require("../services/groqService"));
@@ -153,6 +153,21 @@ const completeSession = async (req, res) => {
         const matchResults = await groqService.calculateResumeMatch(user.resumeData, session.answers);
         // 3. Generate tips
         const tips = await groqService.generateResumeTips(user.resumeData, session.answers);
+        // 4. Generate ideal answers for learning
+        try {
+            const suggestedMap = await groqService.generateSuggestedAnswers(session.answers, session.domain, session.difficulty, user.resumeData);
+            for (const ans of session.answers) {
+                const suggested = suggestedMap[ans.questionId];
+                if (suggested) {
+                    ans.suggestedAnswer = suggested.suggestedAnswer;
+                    ans.keyPoints = suggested.keyPoints;
+                }
+            }
+            session.markModified('answers');
+        }
+        catch (suggestedErr) {
+            console.error('Suggested answers generation skipped:', suggestedErr);
+        }
         session.overallScore = overallScore;
         session.resumeMatchScore = matchResults.score;
         session.resumeMatchAnalysis = matchResults.analysis;
@@ -168,6 +183,45 @@ const completeSession = async (req, res) => {
     }
 };
 exports.completeSession = completeSession;
+const generateSuggestedAnswers = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!req.user) {
+            res.status(401).json({ message: 'Unauthorized.' });
+            return;
+        }
+        const session = await Session_1.Session.findOne({ _id: id, userId: req.user.id });
+        if (!session) {
+            res.status(404).json({ message: 'Session not found.' });
+            return;
+        }
+        if (session.answers.length === 0) {
+            res.status(400).json({ message: 'No answers to generate suggestions for.' });
+            return;
+        }
+        const user = await User_1.User.findById(req.user.id);
+        if (!user?.resumeData) {
+            res.status(400).json({ message: 'Resume data required.' });
+            return;
+        }
+        const suggestedMap = await groqService.generateSuggestedAnswers(session.answers, session.domain, session.difficulty, user.resumeData);
+        for (const ans of session.answers) {
+            const suggested = suggestedMap[ans.questionId];
+            if (suggested) {
+                ans.suggestedAnswer = suggested.suggestedAnswer;
+                ans.keyPoints = suggested.keyPoints;
+            }
+        }
+        session.markModified('answers');
+        await session.save();
+        res.status(200).json(session);
+    }
+    catch (error) {
+        console.error('Generate Suggested Answers Error:', error);
+        res.status(500).json({ message: error.message || 'Failed to generate suggested answers.' });
+    }
+};
+exports.generateSuggestedAnswers = generateSuggestedAnswers;
 const getHistory = async (req, res) => {
     try {
         if (!req.user) {
