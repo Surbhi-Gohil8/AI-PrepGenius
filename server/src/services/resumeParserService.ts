@@ -1,11 +1,12 @@
 import fs from 'fs';
-const pdfParse = require('pdf-parse') as any;
+const { PDFParse } = require('pdf-parse') as any;
 import mammoth from 'mammoth';
 
 export const extractTextFromPDF = async (filePath: string): Promise<string> => {
   const dataBuffer = fs.readFileSync(filePath);
+  const parser = new PDFParse({ data: dataBuffer });
   try {
-    const result = await pdfParse(dataBuffer);
+    const result = await parser.getText();
     const text = result.text || '';
     if (!text.trim()) {
       throw new Error('PDF appears to be image-based or contains no extractable text. Please upload a text-based PDF.');
@@ -13,6 +14,8 @@ export const extractTextFromPDF = async (filePath: string): Promise<string> => {
     return text;
   } catch (error: any) {
     throw new Error(`Failed to extract text from PDF: ${error.message}`);
+  } finally {
+    await parser.destroy();
   }
 };
 
