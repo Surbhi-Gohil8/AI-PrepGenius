@@ -93,15 +93,15 @@ jobs:
         with:
           context: ./server
           push: true
-          tags: ghcr.io/${{ github.repository }}/server:latest
-
+          tags: ghcr.io/surbhi-gohil8/ai-prepgenius-server:latest
+      
       - name: Build and Push Client Image
         uses: docker/build-push-action@v5
         with:
           context: ./client
           push: true
-          tags: ghcr.io/${{ github.repository }}/client:latest
-
+          tags: ghcr.io/surbhi-gohil8/ai-prepgenius-client:latest
+      
   deploy:
     name: Deployment (Staging / Production)
     needs: docker
