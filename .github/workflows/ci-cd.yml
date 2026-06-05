@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   lint:
     name: Lint Codebase
@@ -24,13 +28,13 @@ jobs:
             client/package-lock.json
             server/package-lock.json
 
-      - name: Lint Client
+      - name: Install & Lint Client
         working-directory: client
         run: |
           npm ci
           npm run lint --if-present
 
-      - name: Lint Server
+      - name: Install & Lint Server
         working-directory: server
         run: |
           npm ci
@@ -74,6 +78,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -93,15 +101,19 @@ jobs:
         with:
           context: ./server
           push: true
-          tags: ghcr.io/surbhi-gohil8/ai-prepgenius-server:latest
-      
+          tags: |
+            ghcr.io/surbhi-gohil8/ai-prepgenius-server:latest
+            ghcr.io/surbhi-gohil8/ai-prepgenius-server:${{ github.sha }}
+
       - name: Build and Push Client Image
         uses: docker/build-push-action@v5
         with:
           context: ./client
           push: true
-          tags: ghcr.io/surbhi-gohil8/ai-prepgenius-client:latest
-      
+          tags: |
+            ghcr.io/surbhi-gohil8/ai-prepgenius-client:latest
+            ghcr.io/surbhi-gohil8/ai-prepgenius-client:${{ github.sha }}
+
   deploy:
     name: Deployment (Staging / Production)
     needs: docker
