@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const interviewController_1 = require("../controllers/interviewController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const router = (0, express_1.Router)();
+router.post('/start', authMiddleware_1.authMiddleware, interviewController_1.startSession);
+router.post('/generate-questions', authMiddleware_1.authMiddleware, interviewController_1.generateQuestions);
+router.get('/session/:id', authMiddleware_1.authMiddleware, interviewController_1.getSession);
+router.post('/complete/:id', authMiddleware_1.authMiddleware, interviewController_1.completeSession);
+router.get('/history', authMiddleware_1.authMiddleware, interviewController_1.getHistory);
+exports.default = router;

@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: interview-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - interview-network
+    restart: unless-stopped
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: interview-server
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/mockinterview
+      - JWT_SECRET=your_jwt_secret_here
+      - GROQ_API_KEY=your_groq_api_key_here
+      - NODE_ENV=development
+    volumes:
+      - ./server/uploads:/app/uploads
+    depends_on:
+      - mongo
+    networks:
+      - interview-network
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: interview-client
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    depends_on:
+      - server
+    networks:
+      - interview-network
+    restart: unless-stopped
+
+networks:
+  interview-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local
