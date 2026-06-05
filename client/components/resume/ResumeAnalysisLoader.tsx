@@ -52,8 +52,6 @@ export default function ResumeAnalysisLoader({ onFinished, title = 'AI Profile A
         {steps.map((step, idx) => {
           const isCompleted = activeStep > idx;
           const isActive = activeStep === idx;
-          const isUpcoming = activeStep < idx;
-
           return (
             <AnimatePresence key={idx}>
               {activeStep >= idx && (

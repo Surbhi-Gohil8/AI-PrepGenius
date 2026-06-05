@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,8 +28,6 @@ export default function LiveInterviewPage() {
   const [loading, setLoading] = useState(true);
   const [currentIdx, setCurrentIdx] = useState(0);
   
-  // Recording states
-  const { isRecording, recordingTime, startRecording, stopRecording, audioBlob, clearAudio } = useRecorder();
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcriptText, setTranscriptText] = useState('');
   const [currentAnswer, setCurrentAnswer] = useState<Answer | null>(null);
@@ -42,6 +40,62 @@ export default function LiveInterviewPage() {
   // Navigation states
   const [completedQuestions, setCompletedQuestions] = useState<Record<string, Answer>>({});
   const [isSubmittingFinish, setIsSubmittingFinish] = useState(false);
+  const clearAudioRef = useRef<(() => void) | null>(null);
+
+  const uploadAndScoreResponse = useCallback(async (blob: Blob) => {
+    if (!session) return;
+    setIsProcessing(true);
+
+    const currentQuestion = session.generatedQuestions[currentIdx];
+    const formData = new FormData();
+    const fileExt = blob.type.split(';')[0].split('/')[1] || 'webm';
+    formData.append('audio', blob, `response.${fileExt}`);
+    formData.append('questionId', currentQuestion.id);
+    formData.append('sessionId', session._id);
+
+    try {
+      const response = await api.post('/transcribe', formData);
+      const parsedAnswer: Answer = response.data.answer;
+
+      if (isAnsweringFollowUp) {
+        setFollowUpTranscript(parsedAnswer.transcript);
+        toast.success('Follow-up answer processed!');
+        setIsAnsweringFollowUp(false);
+      } else {
+        setTranscriptText(parsedAnswer.transcript);
+        setCurrentAnswer(parsedAnswer);
+        setCompletedQuestions((prev) => ({
+          ...prev,
+          [currentQuestion.id]: parsedAnswer,
+        }));
+
+        if (parsedAnswer.followUpQuestion) {
+          setFollowUpActive(true);
+        }
+        toast.success('Response processed!');
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      toast.error(getApiErrorMessage(err, 'Error processing speech. Please try again.'));
+      clearAudioRef.current?.();
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [session, currentIdx, isAnsweringFollowUp]);
+
+  const handleAudioReady = useCallback(
+    (blob: Blob) => {
+      void uploadAndScoreResponse(blob);
+    },
+    [uploadAndScoreResponse]
+  );
+
+  const { isRecording, recordingTime, startRecording, stopRecording, clearAudio } =
+    useRecorder(handleAudioReady);
+
+  useEffect(() => {
+    clearAudioRef.current = clearAudio;
+  }, [clearAudio]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -83,53 +137,6 @@ export default function LiveInterviewPage() {
       fetchSession();
     }
   }, [authLoading, isAuthenticated, sessionId, router]);
-
-  const uploadAndScoreResponse = useCallback(async (blob: Blob) => {
-    if (!session) return;
-    setIsProcessing(true);
-
-    const currentQuestion = session.generatedQuestions[currentIdx];
-    const formData = new FormData();
-    const fileExt = blob.type.split(';')[0].split('/')[1] || 'webm';
-    formData.append('audio', blob, `response.${fileExt}`);
-    formData.append('questionId', currentQuestion.id);
-    formData.append('sessionId', session._id);
-
-    try {
-      const response = await api.post('/transcribe', formData);
-      const parsedAnswer: Answer = response.data.answer;
-
-      if (isAnsweringFollowUp) {
-        setFollowUpTranscript(parsedAnswer.transcript);
-        toast.success('Follow-up answer processed!');
-        setIsAnsweringFollowUp(false);
-      } else {
-        setTranscriptText(parsedAnswer.transcript);
-        setCurrentAnswer(parsedAnswer);
-        setCompletedQuestions((prev) => ({
-          ...prev,
-          [currentQuestion.id]: parsedAnswer,
-        }));
-
-        if (parsedAnswer.followUpQuestion) {
-          setFollowUpActive(true);
-        }
-        toast.success('Response processed!');
-      }
-    } catch (err: unknown) {
-      console.error(err);
-      toast.error(getApiErrorMessage(err, 'Error processing speech. Please try again.'));
-      clearAudio();
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [session, currentIdx, isAnsweringFollowUp, clearAudio]);
-
-  useEffect(() => {
-    if (audioBlob) {
-      void uploadAndScoreResponse(audioBlob);
-    }
-  }, [audioBlob, uploadAndScoreResponse]);
 
   const handleNextQuestion = () => {
     // Reset states

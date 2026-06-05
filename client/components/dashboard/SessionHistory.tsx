@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Session } from '@/types';
-import { ExternalLink, Calendar, Award, Zap, FileCheck2 } from 'lucide-react';
+import { ExternalLink, Calendar } from 'lucide-react';
 
 interface SessionHistoryProps {
   sessions: Session[];

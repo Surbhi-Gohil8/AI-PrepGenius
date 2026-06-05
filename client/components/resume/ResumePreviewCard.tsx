@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, FolderOpen, Briefcase, GraduationCap, RefreshCw, Check, ArrowRight, Dot, BookOpen } from 'lucide-react';
+import { User, FolderOpen, Briefcase, GraduationCap, RefreshCw, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

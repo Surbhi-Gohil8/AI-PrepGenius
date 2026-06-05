@@ -25,27 +25,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const loadUser = async () => {
-    await Promise.resolve();
-    const token = getToken();
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await api.get('/auth/me');
-      setUser(response.data);
-    } catch (error) {
-      console.error('Failed to load user profile:', error);
-      clearToken();
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const refreshUser = async () => {
     try {
       const response = await api.get('/auth/me');
@@ -56,7 +35,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    void loadUser();
+    const token = getToken();
+    if (!token) {
+      Promise.resolve().then(() => setLoading(false));
+      return;
+    }
+
+    let active = true;
+
+    api
+      .get('/auth/me')
+      .then((response) => {
+        if (active) setUser(response.data);
+      })
+      .catch((error) => {
+        console.error('Failed to load user profile:', error);
+        if (active) {
+          clearToken();
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {

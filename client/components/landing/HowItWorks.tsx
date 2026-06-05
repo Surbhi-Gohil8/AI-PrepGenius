@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Upload, Cpu, Mic, BarChart3, ChevronRight } from 'lucide-react';
+import { Upload, Cpu, Mic, BarChart3 } from 'lucide-react';
 
 export default function HowItWorks() {
   const steps = [

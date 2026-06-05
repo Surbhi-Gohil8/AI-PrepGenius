@@ -14,7 +14,6 @@ export function useResume() {
   const [isUploading, setIsUploading] = useState(false);
 
   const fetchResume = useCallback(async () => {
-    await Promise.resolve();
     setLoading(true);
     try {
       const response = await api.get('/resume/me');
@@ -61,14 +60,35 @@ export function useResume() {
 
   useEffect(() => {
     if (!user) {
-      void Promise.resolve().then(() => {
+      Promise.resolve().then(() => {
         setResumeData(null);
         setLoading(false);
       });
       return;
     }
-    void fetchResume();
-  }, [user, fetchResume]);
+
+    let cancelled = false;
+
+    Promise.resolve().then(() => {
+      if (!cancelled) setLoading(true);
+    });
+
+    api
+      .get('/resume/me')
+      .then((response) => {
+        if (!cancelled) setResumeData(response.data.resumeData);
+      })
+      .catch((error) => {
+        console.error('Error fetching resume:', error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   return {
     resumeData,

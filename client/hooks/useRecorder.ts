@@ -11,7 +11,7 @@ interface UseRecorderReturn {
   clearAudio: () => void;
 }
 
-export function useRecorder(): UseRecorderReturn {
+export function useRecorder(onAudioReady?: (blob: Blob) => void): UseRecorderReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -20,6 +20,11 @@ export function useRecorder(): UseRecorderReturn {
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const onAudioReadyRef = useRef(onAudioReady);
+
+  useEffect(() => {
+    onAudioReadyRef.current = onAudioReady;
+  }, [onAudioReady]);
 
   const startRecording = useCallback(async () => {
     chunksRef.current = [];
@@ -56,7 +61,8 @@ export function useRecorder(): UseRecorderReturn {
         const mimeTypeUsed = mediaRecorder.mimeType || 'audio/webm';
         const blob = new Blob(chunksRef.current, { type: mimeTypeUsed });
         setAudioBlob(blob);
-        
+        onAudioReadyRef.current?.(blob);
+
         // Stop all tracks on the stream
         if (streamRef.current) {
           streamRef.current.getTracks().forEach((track) => track.stop());
