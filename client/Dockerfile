@@ -1,18 +1,30 @@
+# ==========================================
 # Stage 1: Build Next.js Application
-FROM node:18-alpine AS builder
+# ==========================================
+FROM node:20-alpine AS builder
+
 WORKDIR /app
+
 COPY package*.json ./
+
 RUN npm ci
+
 COPY . .
+
 RUN npm run build
 
-# Stage 2: Production Execution Image
-FROM node:18-alpine AS runner
+# ==========================================
+# Stage 2: Production Runtime
+# ==========================================
+FROM node:20-alpine AS runner
+
 WORKDIR /app
+
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm ci --only=production
+
+RUN npm ci --omit=dev
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
