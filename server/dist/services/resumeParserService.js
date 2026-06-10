@@ -5,12 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.extractResumeText = exports.extractTextFromDOCX = exports.extractTextFromPDF = void 0;
 const fs_1 = __importDefault(require("fs"));
-const pdfParse = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 const mammoth_1 = __importDefault(require("mammoth"));
 const extractTextFromPDF = async (filePath) => {
     const dataBuffer = fs_1.default.readFileSync(filePath);
+    const parser = new PDFParse({ data: dataBuffer });
     try {
-        const result = await pdfParse(dataBuffer);
+        const result = await parser.getText();
         const text = result.text || '';
         if (!text.trim()) {
             throw new Error('PDF appears to be image-based or contains no extractable text. Please upload a text-based PDF.');
@@ -19,6 +20,9 @@ const extractTextFromPDF = async (filePath) => {
     }
     catch (error) {
         throw new Error(`Failed to extract text from PDF: ${error.message}`);
+    }
+    finally {
+        await parser.destroy();
     }
 };
 exports.extractTextFromPDF = extractTextFromPDF;
